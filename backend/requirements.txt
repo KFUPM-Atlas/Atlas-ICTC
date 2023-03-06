@@ -1,0 +1,5 @@
+django=4.1.7
+djangorestframework=3.14.0
+hvac=1.0.2
+python=3.9.16
+pycognito=2022.12.0

@@ -13,6 +13,10 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 from pathlib import Path
 import hvac
 import sys
+import secrets
+import os
+from dotenv import load_dotenv
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -20,17 +24,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
+# Loading .env
+load_dotenv(dotenv_path='../.env')
+
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-ic&mn7b1-5a%y15copei29&-7zcx02lh6o)&7k)nx(w^e8z$lb'
+SECRET_KEY = secrets.token_hex(32)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = []
 
 
 # Vault Authentication
-# client = hvac.Client(url='http://20.14.225.78:8200', token='hvs.6WEZ5mWS5E1EB50L3vLzCuKk')
+client = hvac.Client(url=os.getenv('VAULT_URL'), token=os.getenv('VAULT_TOKEN'))
 
 # Application definition
 
@@ -41,12 +48,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
     # Django REST API
-    'rest_framework'
-    
+    'rest_framework',
+
     # API Apps
-    'events.apps.EventsConfig'
+    'events.apps.EventsConfig',
+
+    # AWS Cogntio Auth 3rd party library
+    'pycognito'
 ]
 
 MIDDLEWARE = [
@@ -79,29 +88,48 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'backend.wsgi.application'
 
+# Session
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_COOKIE_AGE = 1800 # Session age in seconds (30 Minutes)
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True # Session expires when the user closes the browser
+SESSION_COOKIE_NAME = 's_id'
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
 
-# Database
-# https://docs.djangoproject.com/en/4.1/ref/settings/#databases
+
 
 # Check if the client is authenticated with valut, then connect to database
-# if client.is_authenticated():
-#     # Read a secret from the path 'secret/myapp'
-#     secret = client.secrets.kv.v2.read_secret(mount_point='Key-Value', path='/database')
-#     # Access the secret data
-#     secret_data = secret['data']['data']
-#     DATABASES = {
-#         'default': {
-#             'ENGINE': 'django.db.backends.postgresql',
-#             'NAME': secret_data['name'],
-#             'USER': secret_data['user'],
-#             'PASSWORD': secret_data['password'],
-#             'HOST': secret_data['host'],
-#             'PORT': secret_data['port'],
-#         }
-#     }
-#     print(secret_data)
-# else:
-#     print('Could not authenticate with Vault server')
+if client.is_authenticated():
+    # Reading DB secrets from vault server
+    db_secret = client.secrets.kv.v2.read_secret(mount_point='Key-Value', path='/database')
+    # Access the secret data
+    db_secret_data = db_secret['data']['data']
+
+    # Database
+    # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': db_secret_data['name'],
+            'USER': db_secret_data['user'],
+            'PASSWORD': db_secret_data['password'],
+            'HOST': db_secret_data['host'],
+            'PORT': db_secret_data['port'],
+        }
+    }
+
+    # Reading AWS secrets from vault server
+    aws_secret = client.secrets.kv.v2.read_secret(mount_point='Key-Value', path='/aws')
+    # Access the secrets data
+    aws_secret_data = aws_secret['data']['data']
+    # AWS Credentials
+    COGNITO_USER_POOL_ID = aws_secret_data['user_pool_id']
+    COGNITO_APP_CLIENT_ID = aws_secret_data['app_client_id']
+    COGNITO_AWS_REGION = aws_secret_data['region']
+    COGNITO_CLIENT_SECRET = aws_secret_data['client_secret']
+
+else:
+    print('Could not authenticate with Vault server')
 
 
 
@@ -130,19 +158,21 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Riyadh'
 
 USE_I18N = True
 
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.1/howto/static-files/
-
-STATIC_URL = 'static/'
-
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+
+
+
+
+
