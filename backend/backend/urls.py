@@ -18,9 +18,6 @@ from django.urls import path, include
 
 urlpatterns = [
     path('', include('auth_users.urls')),
-<<<<<<< Updated upstream
-=======
     path('', include('events.urls')),
     path('', include('club.urls'))
->>>>>>> Stashed changes
 ]

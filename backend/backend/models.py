@@ -47,12 +47,6 @@ Models:
 #     attachment_path = models.CharField(max_length=500)
 
 
-class club_management(models.Model):
-    assignment_date = models.DateField()
-    club_officer_id = models.ForeignKey(to='club_officer', on_delete=models.DO_NOTHING)
-    club_id = models.ForeignKey(to='club', on_delete=models.DO_NOTHING)
-
-
 
 
 
