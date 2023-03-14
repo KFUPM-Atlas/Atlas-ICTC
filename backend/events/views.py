@@ -21,7 +21,7 @@ def events(request):
     elif request.method == 'POST':
         return create_event(request)
     else:
-        return JsonResponse({'error': 'Method not allowed, only accepts POST and GET'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        return JsonResponse({'error': 'Method not allowed, only accepts POST and GET', 'success': False}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 def upcoming_events(request):
@@ -35,12 +35,15 @@ def upcoming_events(request):
 
         if coming_events.exists():
             serializer = EventSerializer(coming_events, many=True)
-            return JsonResponse(serializer.data, safe=False, status=status.HTTP_200_OK)
+            return JsonResponse({'message': 'success',
+                                 'data': serializer.data,
+                                 'success': True}, safe=False, status=status.HTTP_200_OK)
         else:
-            return JsonResponse({'message': 'the user did not register in any event yet'},
+            return JsonResponse({'message': 'the user did not register in any event yet',
+                                 'success': True},
                                 status=status.HTTP_204_NO_CONTENT)
     else:
-        return JsonResponse({'error': 'Not Authorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        return JsonResponse({'error': 'Not Authorized', 'success': False}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 def create_event(request):
@@ -61,17 +64,17 @@ def create_event(request):
             event_serializer = EventSerializer(data=req_data)
             if event_serializer.is_valid():
                 event_serializer.save()
-                return JsonResponse({'message': 'event created'}, status=status.HTTP_201_CREATED)
+                return JsonResponse({'message': 'event created', 'success': True}, status=status.HTTP_201_CREATED)
             else:
                 print(event_serializer.errors)
                 print(event_serializer.errors.__str__())
-                return JsonResponse({'error': str(event_serializer.errors)}, status=status.HTTP_400_BAD_REQUEST)
+                return JsonResponse({'error': str(event_serializer.errors), 'success': False}, status=status.HTTP_400_BAD_REQUEST)
         else:
             print(event_serializer.errors)
             print(event_serializer.errors.__str__())
-            return JsonResponse({'error': str(event_serializer.errors)}, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({'error': str(event_serializer.errors), 'success': False}, status=status.HTTP_400_BAD_REQUEST)
     else:
-        return JsonResponse({'error': 'Not Authorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        return JsonResponse({'error': 'Not Authorized', 'success': True}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 @api_view(['GET'])
@@ -80,21 +83,24 @@ def event_details(request, event_id):
         details = event.objects.get(event_id=event_id)
         print(details)
     except event.DoesNotExist:
-        return JsonResponse({'error': 'The event does not exists'}, status=status.HTTP_404_NOT_FOUND)
+        return JsonResponse({'error': 'The event does not exists', 'success': False}, status=status.HTTP_404_NOT_FOUND)
     serializer = EventSerializer(details, many=False)
-    return JsonResponse(serializer.data, safe=False, status=status.HTTP_200_OK)
+    return JsonResponse({'message': 'success',
+                         'data': serializer.data,
+                         'success': True}, safe=False, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
 def attend_event(request, event_id):
     if request.session.get('is_auth') is not None and request.session.get('is_auth')\
             and request.session.get('role') != 'supervisor':
-
         try:
             attendance = event_attendance(student_id=request.session.get('username'), event_id=event_id)
             attendance.save()
         except Exception as e:
-            return JsonResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return JsonResponse({'error': 'Internal server error',
+                                 'success': False}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        return JsonResponse({'message': 'student has been registered for the event'}, status=status.HTTP_200_OK)
+        return JsonResponse({'message': 'student has been registered for the event', 'success': True},
+                            status=status.HTTP_200_OK)
 

@@ -47,10 +47,17 @@ def login_view(request):
         request.session['club_id'] = get_club_id(user_id=username)
         request.session.save()
 
-        return JsonResponse({'message': 'success login'}, status=status.HTTP_200_OK)
+        return JsonResponse({
+            'message': 'success login',
+            'data': {
+                'username': username,
+                'name_en': response_json['name_en'],
+                'role': role
+            }, 'success': True}, status=status.HTTP_200_OK)
     except Exception as e:
         print(str(e))
-        return JsonResponse({'error': 'email or password is wrong'}, status=status.HTTP_401_UNAUTHORIZED)
+        return JsonResponse({'error': 'username or password is wrong', 'success': False},
+                            status=status.HTTP_401_UNAUTHORIZED)
 
 
 def get_user_role(user_id):

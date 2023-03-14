@@ -18,7 +18,7 @@ def clubs_view(request):
         return list_clubs(request)
     # elif request.method == 'POST' TODO: create club
     else:
-        return JsonResponse({'error': 'Method not allowed, only accepts GET and POST'},
+        return JsonResponse({'error': 'Method not allowed, only accepts GET and POST', 'success': False},
                             status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
@@ -29,7 +29,7 @@ def club_details_view(request, club_id):
     elif request.method == 'UPDATE':
         return update_club_details(request, club_id)
     else:
-        return JsonResponse({'error': 'Method not allowed, only accepts UPDATE and GET'},
+        return JsonResponse({'error': 'Method not allowed, only accepts UPDATE and GET', 'success': False},
                             status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
@@ -52,7 +52,9 @@ def list_clubs(request):
         'next_page': page.next_page_number() if page.has_next() else None
     }
 
-    return JsonResponse(response_data, status=status.HTTP_200_OK)
+    return JsonResponse({'message': 'success',
+                         'data': response_data,
+                         'success': True}, status=status.HTTP_200_OK)
 
 
 def update_club_details(request, club_id):
@@ -80,17 +82,21 @@ def update_club_details(request, club_id):
             club_var.save()
 
             serializer = ClubSerializer(club_var)
-            return JsonResponse(serializer.data, status=status.HTTP_200_OK)
+            return JsonResponse({'message': 'club updated',
+                                 'data': serializer.data,
+                                 'success': True}, status=status.HTTP_200_OK)
         except club.DoesNotExist:
-            JsonResponse({'error': 'The club does not exists'}, status=status.HTTP_404_NOT_FOUND)
+            JsonResponse({'error': 'The club does not exists', 'success': False}, status=status.HTTP_404_NOT_FOUND)
     else:
-        return JsonResponse({'error': 'Not Authorized'}, status=status.HTTP_401_UNAUTHORIZED)
+        return JsonResponse({'error': 'Not Authorized', 'success': False}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 def get_club_details(request, club_id):
     try:
         details = club.objects.get(club_id=club_id)
     except club.DoesNotExist:
-        return JsonResponse({'error': 'The club does not exists'}, status=status.HTTP_404_NOT_FOUND)
+        return JsonResponse({'error': 'The club does not exists', 'success': False}, status=status.HTTP_404_NOT_FOUND)
     serializer = ClubSerializer(details, many=False)
-    return JsonResponse(serializer.data, safe=False, status=status.HTTP_200_OK)
+    return JsonResponse({'message': 'success',
+                         'data': serializer.data,
+                         'success': True}, safe=False, status=status.HTTP_200_OK)
