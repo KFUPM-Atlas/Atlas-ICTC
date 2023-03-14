@@ -37,11 +37,11 @@ def list_clubs(request):
     clubs = club.objects.order_by('club_id')
 
     if not clubs.exists():
-        return JsonResponse({'message': 'the are now clubs'}, status=status.HTTP_204_NO_CONTENT)
+        return JsonResponse({'message': 'the are no clubs', 'success': False}, status=status.HTTP_204_NO_CONTENT)
 
-    paginator = Paginator(clubs, per_page=25)
+    paginator = Paginator(clubs, per_page=10)
 
-    page_number = request.GET.get('page', 1)
+    page_number = json.loads(request.body)['page']
     page = paginator.get_page(page_number)
 
     clubs_data = [{'club_id': club_var.club_id, 'name': club_var.name, 'logo_path': club_var.logo_path} for club_var in
