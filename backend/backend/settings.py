@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/4.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
-
+import time
 from pathlib import Path
 import hvac
 import sys
@@ -25,13 +25,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # Loading .env
-load_dotenv(dotenv_path='../.env')
+load_dotenv(dotenv_path='.env')
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = secrets.token_hex(32)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = []
 
@@ -48,11 +48,18 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # Installing the apps of the project
+    'backend',
+    'club',
+    'events',
+    'auth_users',
+    'media_manager',
+
     # Django REST API
     'rest_framework',
 
-    # API Apps
-    'events.apps.EventsConfig',
+    # # API Apps
+    # 'events.apps.EventsConfig',
 
     # AWS Cogntio Auth 3rd party library
     'pycognito'
@@ -122,11 +129,18 @@ if client.is_authenticated():
     aws_secret = client.secrets.kv.v2.read_secret(mount_point='Key-Value', path='/aws')
     # Access the secrets data
     aws_secret_data = aws_secret['data']['data']
-    # AWS Credentials
+    # AWS Auth Credentials
     COGNITO_USER_POOL_ID = aws_secret_data['user_pool_id']
     COGNITO_APP_CLIENT_ID = aws_secret_data['app_client_id']
     COGNITO_AWS_REGION = aws_secret_data['region']
     COGNITO_CLIENT_SECRET = aws_secret_data['client_secret']
+
+    # AWS S3 (Simple Storage Service) Credentials
+    AWS_S3_ACCESS_KEY_ID = aws_secret_data['s3_access_key']
+    AWS_S3_SECRET_ACCESS_KEY = aws_secret_data['s3_secret_key']
+    AWS_S3_STORAGE_BUCKET_NAME = aws_secret_data['s3_bucket']
+    AWS_S3_REGION_NAME = aws_secret_data['region']
+    AWS_S3_DEFAULT_ACL = aws_secret_data['s3_acl'] # Access Control Lists
 
 else:
     print('Could not authenticate with Vault server')
@@ -171,7 +185,7 @@ USE_TZ = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-
+STATIC_URL = 'static/'
 
 
 

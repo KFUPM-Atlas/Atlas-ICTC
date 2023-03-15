@@ -18,4 +18,6 @@ from django.urls import path, include
 
 urlpatterns = [
     path('', include('auth_users.urls')),
+    path('', include('events.urls')),
+    path('', include('club.urls'))
 ]
